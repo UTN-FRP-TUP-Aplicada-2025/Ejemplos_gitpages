@@ -1,0 +1,10 @@
+*.ds_store
+*.swp
+*.swo
+*~
+.vs
+.vscode
+bin
+obj
+.env
+.env.local

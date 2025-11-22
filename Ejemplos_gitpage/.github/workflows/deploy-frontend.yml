@@ -1,0 +1,41 @@
+name: Deploy Frontend & Build
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-frontend.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: ✅ Checkout código
+      uses: actions/checkout@v3
+
+    - name: 🔧 Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: 📦 Subir artefactos
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: 'web'
+
+    - name: 🚀 Deploy a GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
+
+    - name: ✨ Build completado
+      run: echo "Frontend desplegado en GitHub Pages"
