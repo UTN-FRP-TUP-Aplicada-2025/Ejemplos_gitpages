@@ -1,4 +1,4 @@
-name: Deploy API to GitHub Pages
+name: Build & Deploy .NET API
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -31,171 +31,304 @@ jobs:
       run: dotnet test Ejemplos_codespaces/Ejemplo_API_Web/Ejemplo_API_Web.csproj --configuration Release --no-build --verbosity normal || true
 
     - name: Publish
-      run: dotnet publish Ejemplos_codespaces/Ejemplo_API_Web/Ejemplo_API_Web.csproj -c Release -o ./publish
+      run: dotnet publish Ejemplos_codespaces/Ejemplo_API_Web/Ejemplo_API_Web.csproj -c Release -o ./publish /p:UseAppHost=false
 
-    - name: Create GitHub Pages content
+    - name: Create Static Web Content for GitHub Pages
       run: |
         mkdir -p ./docs
-        cp -r ./publish/* ./docs/ || true
-        cat > ./docs/index.html << 'EOF'
+        cat > ./docs/index.html << 'HTML_EOF'
         <!DOCTYPE html>
         <html lang="es">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>API Personas - GitHub Pages</title>
+            <title>API Personas - .NET Core 8.0</title>
             <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
                 body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    max-width: 900px;
-                    margin: 0 auto;
-                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: #333;
+                    min-height: 100vh;
+                    padding: 20px;
                 }
                 .container {
+                    max-width: 1000px;
+                    margin: 0 auto;
                     background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    overflow: hidden;
+                }
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 40px 30px;
+                    text-align: center;
+                }
+                .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+                .header p { font-size: 1.1em; opacity: 0.9; }
+                .content {
+                    padding: 40px 30px;
+                }
+                .section {
+                    margin-bottom: 30px;
+                }
+                .section h2 {
+                    color: #667eea;
+                    font-size: 1.8em;
+                    margin-bottom: 20px;
+                    border-bottom: 3px solid #667eea;
+                    padding-bottom: 10px;
+                }
+                .api-client {
+                    background: #f8f9fa;
+                    border: 2px solid #e9ecef;
                     border-radius: 8px;
-                    padding: 30px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    padding: 20px;
+                    margin-bottom: 20px;
                 }
-                h1 { color: #667eea; margin-bottom: 10px; }
-                .status {
-                    background: #e8f5e9;
-                    border-left: 4px solid #4caf50;
-                    padding: 15px;
-                    margin: 20px 0;
-                    border-radius: 4px;
-                }
+                .api-client h3 { color: #495057; margin-bottom: 15px; }
                 .endpoint {
-                    background: #f5f5f5;
+                    background: white;
+                    border-left: 4px solid #667eea;
                     padding: 15px;
                     margin: 10px 0;
                     border-radius: 4px;
-                    border-left: 4px solid #2196f3;
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
                 }
                 .method {
                     display: inline-block;
-                    padding: 4px 8px;
-                    border-radius: 3px;
+                    padding: 6px 12px;
+                    border-radius: 4px;
                     font-weight: bold;
                     color: white;
-                    margin-right: 10px;
+                    font-size: 0.9em;
+                    min-width: 60px;
+                    text-align: center;
                 }
-                .get { background: #4caf50; }
-                .post { background: #2196f3; }
-                .put { background: #ff9800; }
-                .delete { background: #f44336; }
-                code {
-                    background: #f0f0f0;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-family: 'Courier New', monospace;
-                }
-                .info-box {
-                    background: #fff3cd;
-                    border: 1px solid #ffc107;
-                    padding: 15px;
+                .method.get { background: #28a745; }
+                .method.post { background: #007bff; }
+                .method.put { background: #ffc107; }
+                .method.delete { background: #dc3545; }
+                .endpoint-path {
+                    font-family: 'Monaco', 'Courier New', monospace;
+                    flex: 1;
+                    background: #f8f9fa;
+                    padding: 8px 12px;
                     border-radius: 4px;
-                    margin: 20px 0;
+                    color: #333;
+                }
+                .endpoint-desc {
+                    color: #666;
+                    font-size: 0.9em;
+                    margin-top: 5px;
+                }
+                .status-box {
+                    background: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                }
+                .status-box.success {
+                    color: #155724;
+                    border-color: #c3e6cb;
+                    background: #d4edda;
+                }
+                .status-box.info {
+                    color: #0c5460;
+                    border-color: #bee5eb;
+                    background: #d1ecf1;
+                }
+                .stack {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 15px;
+                    margin-top: 20px;
+                }
+                .stack-item {
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 8px;
+                    border-left: 4px solid #667eea;
+                }
+                .stack-item strong { color: #667eea; }
+                .docker-info {
+                    background: #e7f3ff;
+                    border: 1px solid #b3d9ff;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin-top: 20px;
+                }
+                .docker-info h4 { color: #004085; margin-bottom: 10px; }
+                .docker-info code {
+                    background: #004085;
+                    color: #fff;
+                    padding: 10px;
+                    border-radius: 4px;
+                    display: block;
+                    font-family: 'Courier New', monospace;
+                    margin: 10px 0;
+                    overflow-x: auto;
+                }
+                footer {
+                    background: #f8f9fa;
+                    padding: 20px 30px;
+                    text-align: center;
+                    color: #666;
+                    border-top: 1px solid #e9ecef;
                 }
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>🚀 API Personas - .NET Core 8.0</h1>
-                <p><strong>Estado:</strong> Deployada en GitHub Pages</p>
-                
-                <div class="status">
-                    ✅ La API está disponible en: <code>https://api.ejemplo.local</code>
+                <div class="header">
+                    <h1>🚀 API Personas</h1>
+                    <p>.NET Core 8.0 | ASP.NET Web API</p>
                 </div>
 
-                <h2>📍 Endpoints Disponibles</h2>
-                
-                <div class="endpoint">
-                    <span class="method get">GET</span> /api/personas
-                    <p>Obtiene todas las personas</p>
+                <div class="content">
+                    <div class="section">
+                        <div class="status-box success">
+                            ✅ <strong>Estado:</strong> Build & Deploy exitoso en GitHub Actions
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>📋 Endpoints Disponibles</h2>
+                        <div class="api-client">
+                            <h3>Operaciones CRUD</h3>
+                            <div class="endpoint">
+                                <span class="method get">GET</span>
+                                <div>
+                                    <div class="endpoint-path">/api/personas</div>
+                                    <div class="endpoint-desc">Obtiene todas las personas</div>
+                                </div>
+                            </div>
+
+                            <div class="endpoint">
+                                <span class="method get">GET</span>
+                                <div>
+                                    <div class="endpoint-path">/api/personas/{id}</div>
+                                    <div class="endpoint-desc">Obtiene una persona por ID</div>
+                                </div>
+                            </div>
+
+                            <div class="endpoint">
+                                <span class="method post">POST</span>
+                                <div>
+                                    <div class="endpoint-path">/api/personas</div>
+                                    <div class="endpoint-desc">Crea una nueva persona</div>
+                                </div>
+                            </div>
+
+                            <div class="endpoint">
+                                <span class="method put">PUT</span>
+                                <div>
+                                    <div class="endpoint-path">/api/personas/{id}</div>
+                                    <div class="endpoint-desc">Actualiza una persona</div>
+                                </div>
+                            </div>
+
+                            <div class="endpoint">
+                                <span class="method delete">DELETE</span>
+                                <div>
+                                    <div class="endpoint-path">/api/personas/{id}</div>
+                                    <div class="endpoint-desc">Elimina una persona</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>🐳 Ejecutar con Docker</h2>
+                        <div class="docker-info">
+                            <h4>Opción 1: Desde GitHub Container Registry</h4>
+                            <code>docker run -d -p 5000:80 ghcr.io/UTN-FRP-TUP-Aplicada-2025/Ejemplos_git_codespaces/api:latest</code>
+                            <p>Luego accede a: <strong>http://localhost:5000/api/personas</strong></p>
+
+                            <h4 style="margin-top: 20px;">Opción 2: Build local</h4>
+                            <code>docker build -t api-personas .</code>
+                            <code style="margin-top: 10px;">docker run -d -p 5000:80 api-personas</code>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>📦 Stack Tecnológico</h2>
+                        <div class="stack">
+                            <div class="stack-item">
+                                <strong>.NET Core</strong>
+                                <p>Versión 8.0</p>
+                            </div>
+                            <div class="stack-item">
+                                <strong>ASP.NET Web API</strong>
+                                <p>RESTful Services</p>
+                            </div>
+                            <div class="stack-item">
+                                <strong>Swagger/OpenAPI</strong>
+                                <p>API Documentation</p>
+                            </div>
+                            <div class="stack-item">
+                                <strong>CORS</strong>
+                                <p>Cross-Origin Enabled</p>
+                            </div>
+                            <div class="stack-item">
+                                <strong>Docker</strong>
+                                <p>Containerization</p>
+                            </div>
+                            <div class="stack-item">
+                                <strong>GitHub Actions</strong>
+                                <p>CI/CD Automation</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="status-box info">
+                            <strong>ℹ️ Nota:</strong> GitHub Pages solo sirve contenido estático. Para usar la API, ejecuta con Docker o localmente. El workflow compila automáticamente en cada push a main.
+                        </div>
+                    </div>
                 </div>
 
-                <div class="endpoint">
-                    <span class="method get">GET</span> /api/personas/{id}
-                    <p>Obtiene una persona por su ID</p>
-                </div>
-
-                <div class="endpoint">
-                    <span class="method post">POST</span> /api/personas
-                    <p>Crea una nueva persona</p>
-                </div>
-
-                <div class="endpoint">
-                    <span class="method put">PUT</span> /api/personas/{id}
-                    <p>Actualiza una persona existente</p>
-                </div>
-
-                <div class="endpoint">
-                    <span class="method delete">DELETE</span> /api/personas/{id}
-                    <p>Elimina una persona</p>
-                </div>
-
-                <h2>🔧 Swagger UI</h2>
-                <p>Accede a la documentación interactiva en: <code>/swagger</code></p>
-
-                <div class="info-box">
-                    <strong>ℹ️ Nota:</strong> Esta página es un índice. Para ejecutar la API localmente, ejecuta <code>dotnet run</code> en el directorio del proyecto.
-                </div>
-
-                <h2>📦 Stack Tecnológico</h2>
-                <ul>
-                    <li>.NET Core 8.0</li>
-                    <li>ASP.NET Core Web API</li>
-                    <li>Swagger/OpenAPI</li>
-                    <li>CORS habilitado</li>
-                </ul>
-
-                <hr>
-                <p style="text-align: center; color: #999; font-size: 12px;">
-                    Última actualización: {{ date }}
-                </p>
+                <footer>
+                    <p>🔗 Repositorio: <a href="https://github.com/UTN-FRP-TUP-Aplicada-2025/Ejemplos_git_codespaces" style="color: #667eea;">GitHub</a></p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Build automático | GitHub Actions</p>
+                </footer>
             </div>
         </body>
         </html>
-        EOF
+        HTML_EOF
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy Static Site to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs
-        cname: api.ejemplo.local
 
     - name: Build Docker Image
-      run: |
-        docker build -t ghcr.io/${{ github.repository }}/api:latest \
-          -f - Ejemplos_codespaces/Ejemplo_API_Web << 'DOCKERFILE'
-        FROM mcr.microsoft.com/dotnet/aspnet:8.0 as base
-        WORKDIR /app
-        EXPOSE 80
+      run: docker build -t ghcr.io/${{ github.repository }}/api:latest -f Dockerfile .
 
-        FROM mcr.microsoft.com/dotnet/sdk:8.0 as build
-        WORKDIR /src
-        COPY ["Ejemplos_codespaces/Ejemplo_API_Web/Ejemplo_API_Web.csproj", "Ejemplo_API_Web/"]
-        RUN dotnet restore "Ejemplo_API_Web/Ejemplo_API_Web.csproj"
-        COPY . .
-        WORKDIR "/src/Ejemplo_API_Web"
-        RUN dotnet build "Ejemplo_API_Web.csproj" -c Release -o /app/build
-
-        FROM build as publish
-        RUN dotnet publish "Ejemplo_API_Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-        FROM base as final
-        WORKDIR /app
-        COPY --from=publish /app/publish .
-        ENTRYPOINT ["dotnet", "Ejemplo_API_Web.dll"]
-        DOCKERFILE
+    - name: Login to GitHub Container Registry
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
     - name: Push Docker Image
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: docker push ghcr.io/${{ github.repository }}/api:latest
+
+    - name: Create Release Artifact
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        docker push ghcr.io/${{ github.repository }}/api:latest
-      continue-on-error: true
+        cd publish
+        zip -r ../api-release.zip .
+        cd ..
+
+    - name: Upload Build Artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-build
+        path: api-release.zip
+        retention-days: 30
